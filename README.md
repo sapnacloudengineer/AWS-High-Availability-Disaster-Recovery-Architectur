@@ -247,6 +247,9 @@ Daily recovery points are created automatically.
 ---
 
 # 📷 Screenshots
+## Architecture Diagram
+
+![Architecture](screenshot/aws-ha-architecture.png)
 
 ## VPC
 
