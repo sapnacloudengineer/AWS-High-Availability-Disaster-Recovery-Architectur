@@ -1,58 +1,84 @@
-# AWS High Availability Architecture (Auto Scaling + Load Balancer)
+# AWS High Availability & Disaster Recovery Architecture
 
 ## Project Overview
 
-This project demonstrates a highly available and scalable architecture on AWS using core networking and compute services. The system is designed to ensure fault tolerance, load distribution, and automatic scaling across multiple Availability Zones.
+This project demonstrates a highly available, scalable, and disaster recovery architecture on AWS using core networking, compute, database, and backup services.
+
+The infrastructure is designed to provide:
+
+- High Availability across multiple Availability Zones
+- Automatic Load Distribution
+- Auto Scaling for EC2 Instances
+- Database High Availability using Amazon RDS Multi-AZ
+- Automated Disaster Recovery using AWS Backup
+- Improved Fault Tolerance and Business Continuity
 
 ---
 
-## Architecture Components
+# Architecture Components
 
-* Virtual Private Cloud (VPC)
-* Public Subnets (2 Availability Zones)
-* Private Subnets (2 Availability Zones)
-* Internet Gateway
-* NAT Gateway
-* Application Load Balancer (ALB)
-* Auto Scaling Group (ASG)
-* EC2 Instances (Private Subnets)
-* CloudWatch Monitoring
-
----
-
-## Architecture Diagram
-
-![DIAGRAM](screenshot/aws-ha-architecture.png)
-
----
-
-## Implementation Steps
-
-### 1. VPC and Networking
-
-* Created a VPC with CIDR block: `10.0.0.0/16`
-* Created four subnets:
-
-  * Public Subnet (AZ1)
-  * Public Subnet (AZ2)
-  * Private Subnet (AZ1)
-  * Private Subnet (AZ2)
-* Attached Internet Gateway to the VPC
-* Created NAT Gateway for private subnet internet access
-* Configured route tables:
-
-  * Public subnets routed to Internet Gateway
-  * Private subnets routed to NAT Gateway
+- Amazon VPC
+- Internet Gateway
+- NAT Gateway
+- Public Subnets (2 Availability Zones)
+- Private DB Subnets (2 Availability Zones)
+- Route Tables
+- Security Groups
+- Amazon EC2
+- Application Load Balancer (ALB)
+- Auto Scaling Group (ASG)
+- Amazon RDS (Multi-AZ)
+- DB Subnet Group
+- AWS Backup
+- Backup Vault
+- CloudWatch Monitoring
 
 ---
 
-### 2. EC2 and Launch Template
+# Architecture Diagram
 
-* Created a Launch Template with:
+![Architecture](screenshot/aws-ha-architecture.png)
 
-  * AMI: Ubuntu
-  * Instance Type: `t3.micro`
-  * User Data Script:
+---
+
+# Workflow
+
+1. User sends a request to the Application Load Balancer.
+2. ALB distributes traffic to EC2 instances.
+3. EC2 communicates with Amazon RDS inside private DB subnets.
+4. Amazon RDS replicates data automatically to the standby instance in another Availability Zone.
+5. AWS Backup creates scheduled recovery points.
+6. If the primary database fails, RDS performs automatic failover.
+7. If data is accidentally deleted or corrupted, it can be restored using AWS Backup.
+
+---
+
+# Implementation Steps
+
+## Step 1 - Create VPC
+
+- Created a VPC with CIDR block `10.0.0.0/16`
+
+---
+
+## Step 2 - Create Networking
+
+Created:
+
+- 2 Public Subnets
+- 2 Private DB Subnets
+- Internet Gateway
+- NAT Gateway
+- Public Route Table
+- Private Route Table
+
+---
+
+## Step 3 - Deploy EC2
+
+Created an Ubuntu EC2 instance.
+
+Installed Apache using User Data:
 
 ```bash
 #!/bin/bash
@@ -60,93 +86,147 @@ apt update -y
 apt install apache2 -y
 systemctl start apache2
 systemctl enable apache2
-echo "Hello from Private EC2" > /var/www/html/index.html
+echo "Hello from AWS High Availability Project" > /var/www/html/index.html
 ```
 
 ---
 
-### 3. Load Balancer Configuration
+## Step 4 - Configure Load Balancer
 
-* Created an Application Load Balancer
-* Attached to public subnets across two Availability Zones
-* Created a Target Group
-* Configured health checks (HTTP, port 80, path `/`)
-
----
-
-### 4. Auto Scaling Group
-
-* Created an Auto Scaling Group using the launch template
-* Selected private subnets in multiple Availability Zones
-* Set desired capacity to 2
-* Attached Auto Scaling Group to the target group
+- Created Application Load Balancer
+- Created Target Group
+- Registered EC2
+- Configured Health Check
 
 ---
 
-### 5. Auto Scaling Policy
+## Step 5 - Configure Auto Scaling
 
-* Configured target tracking scaling policy
-* Metric: CPU Utilization
-* Target value: 50%
+Created Launch Template
 
----
+Configured Auto Scaling Group
 
-### 6. Monitoring and Testing
+- Minimum Capacity = 2
+- Desired Capacity = 2
+- Maximum Capacity = 4
 
-* Used CloudWatch for monitoring EC2 metrics
-* Auto Scaling automatically created alarms
-* Simulated load using:
+Configured Target Tracking Policy
 
-```bash
-stress --cpu 4 --timeout 300
-```
+- CPU Utilization = 50%
 
 ---
 
-## Results
+## Step 6 - Configure Amazon RDS
 
-* High availability achieved across multiple Availability Zones
-* Load distributed via Application Load Balancer
-* Automatic scaling triggered based on CPU utilization
-* Fault tolerance validated by replacing instances automatically
+Created Amazon RDS Database
 
----
-
-## Screenshots
-
-* Vpc network Configuration
-   ![VPC](screenshot/vpc.png)
-  
-* Load Balancer Setup
-  ![ABL](screenshot/ALB.png)
-  
-* Auto Scaling Group Activity
-   ![ASG](screenshot/ASG-activity.png)
-  
-* Instance Health-Check (target group)  
-   ![HEALH-CHECK](screenshot/instance-health-check.png) 
-  
-* CloudWatch Metrics
-   ![CLOUDWATCH](screenshot/monitoring.png)
----
-
-## Key Learnings
-
-* VPC networking and subnet design
-* Public vs private architecture
-* Load balancing concepts
-* Auto Scaling configuration
-* CloudWatch monitoring
-* High availability architecture design
+- MySQL Engine
+- Multi-AZ Deployment
+- DB Subnet Group
+- Private Subnets
+- Automated Backups Enabled
 
 ---
 
-## Conclusion
+## Step 7 - Configure AWS Backup
 
-This project demonstrates how to build a scalable, fault-tolerant, and highly available infrastructure on AWS using industry-standard best practices.
+Created
+
+- Backup Plan
+- Backup Rule
+- Backup Assignment
+- Backup Vault
+
+The backup plan automatically creates recovery points for disaster recovery.
 
 ---
 
-## Author
+# Results
 
-Sapna Kumari
+- High Availability achieved across multiple Availability Zones.
+- Automatic traffic distribution using ALB.
+- Automatic EC2 scaling using Auto Scaling Group.
+- Database redundancy using Amazon RDS Multi-AZ.
+- Automated backup and recovery using AWS Backup.
+- Improved Disaster Recovery capability.
+
+---
+
+# Screenshots
+
+## VPC
+
+![VPC](screenshot/vpc.png)
+
+---
+
+## Application Load Balancer
+
+![ALB](screenshot/ALB.png)
+
+---
+
+## Auto Scaling Group
+
+![ASG](screenshot/ASG-activity.png)
+
+---
+
+## EC2 Health Check
+
+![Health Check](screenshot/instance-health-check.png)
+
+---
+
+## CloudWatch Monitoring
+
+![Monitoring](screenshot/monitoring.png)
+
+---
+
+## Amazon RDS
+
+![RDS](screenshot/rds-overview.png)
+
+---
+
+## AWS Backup Plan
+
+![Backup Plan](screenshot/backup-plan.png)
+
+---
+
+## Estimated Cost
+
+![Estimated Cost](screenshot/estimated-cost.png)
+
+---
+
+# Key Learnings
+
+- Amazon VPC
+- Public and Private Subnets
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- Security Groups
+- EC2 Deployment
+- Application Load Balancer
+- Auto Scaling Group
+- Amazon RDS Multi-AZ
+- DB Subnet Group
+- AWS Backup
+- Disaster Recovery Strategy
+- CloudWatch Monitoring
+
+---
+
+# Conclusion
+
+This project demonstrates how to design a production-ready AWS architecture that combines High Availability and Disaster Recovery. The infrastructure ensures continuous application availability, automatic scaling, database redundancy, and automated backup for reliable recovery during failures.
+
+---
+
+# Author
+
+**Sapna Kumari**
