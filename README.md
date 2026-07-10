@@ -338,7 +338,3 @@ This project demonstrates how to build a scalable, highly available, and disaste
 # 👩‍💻 Author
 
 **Sapna Kumari**
-
-AWS Cloud & DevOps Engineer
-
-GitHub: https://github.com/sapnacloudengineer
